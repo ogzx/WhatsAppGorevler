@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
             new SimpleDateFormat("dd.MM HH:mm", Locale.forLanguageTag("tr-TR"));
 
     private boolean tamamGoster = false;
-    private LinearLayout uyari;
+    private LinearLayout uyari, ekranUyari;
     private Button sekmeAcik, sekmeTamam;
     private TextView bos;
     private GorevAdapter adapter;
@@ -79,6 +79,22 @@ public class MainActivity extends Activity {
         uyari.addView(uyariMetin);
         uyari.addView(uyariButon);
         kok.addView(uyari);
+
+        // Ekran okuma kapalıysa görünen uyarı
+        ekranUyari = new LinearLayout(this);
+        ekranUyari.setOrientation(LinearLayout.VERTICAL);
+        ekranUyari.setBackgroundColor(Color.parseColor("#E7F1FF"));
+        ekranUyari.setPadding(dp(16), dp(12), dp(16), dp(12));
+        TextView ekranMetin = new TextView(this);
+        ekranMetin.setText("Sessize alınmış sohbetleri ve WhatsApp açıkken gelen mesajları da "
+                + "yakalamak için ekran okumayı açın: Yüklü uygulamalar > WA Görevler ekran okuma > Aç.");
+        ekranMetin.setTextColor(Color.parseColor("#084298"));
+        Button ekranButon = new Button(this);
+        ekranButon.setText("Ekran okumayı aç");
+        ekranButon.setOnClickListener(v -> ekranOkumaAyarlariniAc(this));
+        ekranUyari.addView(ekranMetin);
+        ekranUyari.addView(ekranButon);
+        kok.addView(ekranUyari);
 
         // Sekmeler
         LinearLayout sekmeler = new LinearLayout(this);
@@ -146,6 +162,7 @@ public class MainActivity extends Activity {
         super.onResume();
         degisti = this::yenile;
         uyari.setVisibility(erisimVar() ? View.GONE : View.VISIBLE);
+        ekranUyari.setVisibility(!Ayarlar.ekran(this) || ekranOkumaAcik(this) ? View.GONE : View.VISIBLE);
         Hatirlatici.planla(this);
         yenile();
     }
@@ -183,6 +200,16 @@ public class MainActivity extends Activity {
 
     static void erisimAyarlariniAc(Context c) {
         c.startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+    }
+
+    static boolean ekranOkumaAcik(Context c) {
+        String s = Settings.Secure.getString(c.getContentResolver(),
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        return s != null && s.contains(c.getPackageName() + "/");
+    }
+
+    static void ekranOkumaAyarlariniAc(Context c) {
+        c.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
     }
 
     // ---- Seçenekler / menü ----
@@ -249,6 +276,7 @@ public class MainActivity extends Activity {
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0, 1, 0, "+ Ekle").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
         menu.add(0, 5, 1, "📷 Fotoğraftan görev");
+        menu.add(0, 7, 2, "Sohbet içe aktar (nasıl?)");
         menu.add(0, 6, 2, "Listeyi WhatsApp'a gönder");
         menu.add(0, 3, 3, "Listeyi paylaş");
         menu.add(0, 2, 4, "Ayarlar");
@@ -272,6 +300,25 @@ public class MainActivity extends Activity {
                 return true;
             case 6:
                 whatsappaGonder();
+                return true;
+            case 7:
+                new AlertDialog.Builder(this)
+                        .setTitle("Sohbet içe aktarma")
+                        .setMessage("Eski mesajları ya da kaçan mesajları taramak için:\n\n"
+                                + "1. WhatsApp'ta sohbeti açın.\n"
+                                + "2. Sağ üst ⋮ > Diğer > Sohbeti dışa aktar.\n"
+                                + "3. \"Medya olmadan\" seçin.\n"
+                                + "4. Açılan listeden \"WA Görevler'e aktar\"ı seçin.\n\n"
+                                + "Uygulama mesajları anahtar kelime ve önemli kişi kurallarına "
+                                + "göre tarar; daha önce eklenenleri tekrar eklemez.\n\n"
+                                + "Tek bir mesajı eklemek için: mesajı kopyalayıp + Ekle'ye yapıştırın "
+                                + "ya da herhangi bir uygulamadan Paylaş > WA Görevler'e aktar deyin.")
+                        .setPositiveButton("WhatsApp'ı aç", (d, w) -> {
+                            Intent wa = getPackageManager().getLaunchIntentForPackage("com.whatsapp");
+                            if (wa != null) startActivity(wa);
+                        })
+                        .setNegativeButton("Kapat", null)
+                        .show();
                 return true;
             case 2:
                 startActivity(new Intent(this, SettingsActivity.class));

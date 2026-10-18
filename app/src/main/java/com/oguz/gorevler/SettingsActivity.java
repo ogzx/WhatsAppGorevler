@@ -46,6 +46,24 @@ public class SettingsActivity extends Activity {
         Switch aktif = anahtar("WhatsApp mesajlarını dinle", Ayarlar.aktif(this));
         Switch hepsi = anahtar("Anahtar kelime aramadan TÜM mesajları ekle", Ayarlar.hepsi(this));
 
+        // ---------------- Ekran okuma
+        baslik("Ekran okuma (bildirimsiz mesajlar)");
+        Switch ekran = anahtar("WhatsApp açıkken ekrandaki mesajları da oku", Ayarlar.ekran(this));
+        aciklama("Sessize alınmış sohbetleri (sohbet listesindeki son mesaj) ve WhatsApp açıkken "
+                + "gelen mesajları yakalar. Telefon ayarlarında açılması gerekir: Erişilebilirlik > "
+                + "Yüklü uygulamalar > WA Görevler ekran okuma. Kilitliyse önce: Ayarlar > Uygulamalar > "
+                + "WA Görevler > ⋮ > Kısıtlı ayarlara izin ver.\n"
+                + "Durum: " + (MainActivity.ekranOkumaAcik(this) ? "AÇIK ✓" : "KAPALI"));
+        Button ekranAc = dugme("Ekran okuma ayarını aç");
+        ekranAc.setOnClickListener(v -> MainActivity.ekranOkumaAyarlariniAc(this));
+        aciklama("WhatsApp'taki kendi adınız (isteğe bağlı). Yazarsanız sohbet içe aktarırken "
+                + "kendi gönderdiğiniz mesajlar görev sayılmaz.");
+        EditText benimAdim = new EditText(this);
+        benimAdim.setSingleLine(true);
+        benimAdim.setHint("Ör. Oğuz");
+        benimAdim.setText(Ayarlar.benimAdim(this));
+        kok.addView(benimAdim);
+
         // ---------------- Anahtar kelimeler
         baslik("Anahtar kelimeler");
         aciklama("Her satıra bir tane. Büyük/küçük harf ve ş/ç/ö/ü/ğ/ı farkı önemsizdir. "
@@ -128,6 +146,8 @@ public class SettingsActivity extends Activity {
             Ayarlar.duzenle(this)
                     .putBoolean("aktif", aktif.isChecked())
                     .putBoolean("hepsi", hepsi.isChecked())
+                    .putBoolean("ekran", ekran.isChecked())
+                    .putString("benimAdim", benimAdim.getText().toString().trim())
                     .putString("kelimeler", kelimeler.getText().toString())
                     .putString("onemli", onemliler.getText().toString())
                     .putBoolean("onemliHepsi", onemliHepsi.isChecked())

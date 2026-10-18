@@ -134,6 +134,22 @@ public class Db extends SQLiteOpenHelper {
         getWritableDatabase().delete("gorev", "tamam = 1", null);
     }
 
+    /** Aynı sohbetten (veya kişiden) aynı metin, verilen zamandan sonra kaydedilmiş mi? */
+    public synchronized boolean varMi(String metin, String sohbet, String kimden, long sonra) {
+        Cursor c = getReadableDatabase().rawQuery(
+                "SELECT 1 FROM gorev WHERE metin = ? AND zaman >= ? "
+                        + "AND (sohbet = ? OR kimden = ? OR sohbet = ? OR kimden = ?) LIMIT 1",
+                new String[]{metin, String.valueOf(sonra),
+                        bos(sohbet), bos(sohbet), bos(kimden), bos(kimden)});
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
+    private static String bos(String s) { return s == null ? "\u0000" : s; }
+
     // ---- Mesaj gelen kişiler (önemli kişi seçimi için) ----
 
     public synchronized void kisiGor(String ad) {

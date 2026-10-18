@@ -56,6 +56,46 @@
             </intent-filter>
         </activity>
 
+        <!-- WhatsApp "Sohbeti dışa aktar" ve düz metin paylaşımı -->
+        <activity
+            android:name=".IceAktarActivity"
+            android:exported="true"
+            android:label="WA Görevler'e aktar"
+            android:theme="@android:style/Theme.Material.Light.Dialog.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="text/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- Ekran okuma: yalnızca WhatsApp açıkken görünen mesajlar -->
+        <service
+            android:name=".EkranOkuyucu"
+            android:exported="true"
+            android:label="WA Görevler ekran okuma"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/ekran_okuyucu" />
+        </service>
+
         <service
             android:name=".WaListenerService"
             android:exported="true"

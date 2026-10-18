@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">WA Görevler</string>
+    <string name="ekran_aciklama">WA Görevler yalnızca WhatsApp açıkken ekrandaki mesajları okur: açık sohbetteki gelen mesajlar ve sohbet listesindeki son mesajlar (sessize alınmış sohbetler dahil). Hiçbir şeye dokunmaz, yazmaz; okunan yazılar telefondan dışarı çıkmaz.</string>
 </resources>

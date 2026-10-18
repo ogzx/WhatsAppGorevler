@@ -57,6 +57,10 @@ public final class Ayarlar {
         return !sadeceOnemli(c) || onemli(c, kimden, sohbet);
     }
 
+    // --- Ekran okuma / içe aktarma ---
+    static boolean ekran(Context c) { return p(c).getBoolean("ekran", true); }
+    static String benimAdim(Context c) { return p(c).getString("benimAdim", "").trim(); }
+
     // --- Fotoğraf ---
     static boolean foto(Context c) { return p(c).getBoolean("foto", true); }
 

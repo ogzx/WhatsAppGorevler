@@ -284,20 +284,8 @@ public class WaListenerService extends NotificationListenerService {
 
     private boolean kaydet(String kimden, String sohbet, String metin, long zaman,
                            String imza, String foto) {
-        if (metin == null) return false;
-        metin = metin.trim();
-        if (metin.isEmpty() || OZET.matcher(metin).find()) return false;
-        if (!Ayarlar.kisiUygun(this, kimden, sohbet)) return false;
-
-        boolean onemli = Ayarlar.onemli(this, kimden, sohbet);
-        String eslesen = Ayarlar.eslesen(this, metin);
-        if (eslesen == null) {
-            if (Ayarlar.hepsi(this) || (onemli && Ayarlar.onemliHepsi(this))) eslesen = "";
-            else return false;
-        }
-        boolean eklendi = Db.get(this).ekle(kimden, sohbet, metin, zaman, eslesen, imza, foto);
-        if (eklendi && Ayarlar.yeniBildirim(this)) Bildirim.yeniGorev(this, kimden, metin);
-        return eklendi;
+        // Ekran okuma aynı mesajı daha önce yakaladıysa tekrar ekleme.
+        return Gorevlendir.dene(this, kimden, sohbet, metin, zaman, imza, foto, foto == null);
     }
 
     private void haberVer() {
