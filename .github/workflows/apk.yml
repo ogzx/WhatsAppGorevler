@@ -1,0 +1,41 @@
+name: APK derle
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  derle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: APK derle
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk WA-Gorevler.apk
+
+      - name: Yayınla (telefondan indirilebilir)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v1.${{ github.run_number }}" WA-Gorevler.apk \
+            --title "WA Görevler 1.${{ github.run_number }}" \
+            --notes "Telefona indirip kurun."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WA-Gorevler-apk
+          path: WA-Gorevler.apk
