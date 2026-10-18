@@ -61,6 +61,46 @@ public final class Ayarlar {
     static boolean ekran(Context c) { return p(c).getBoolean("ekran", true); }
     static String benimAdim(Context c) { return p(c).getString("benimAdim", "").trim(); }
 
+    // --- Kendine görev kalıbı (ör. "#yap", "görev:") ---
+    static final String VARSAYILAN_TETIK = "#yap\ngörev:\nnot:";
+    static String tetikMetin(Context c) { return p(c).getString("tetik", VARSAYILAN_TETIK); }
+    static List<String> tetikler(Context c) { return satirlar(tetikMetin(c)); }
+
+    /** Metin bir tetik kalıbıyla başlıyorsa, kalıbı çıkarıp kalanı döndürür; yoksa null. */
+    static String tetikSoyulmus(Context c, String metin) {
+        if (metin == null) return null;
+        String n = normalize(metin).trim();
+        for (String t : tetikler(c)) {
+            String nt = normalize(t).trim();
+            if (nt.isEmpty()) continue;
+            if (n.startsWith(nt)) {
+                String kalan = metin.trim().substring(Math.min(t.trim().length(), metin.trim().length()));
+                return kalan.replaceFirst("^[\\s:>-]+", "").trim();
+            }
+        }
+        return null;
+    }
+
+    // --- Her mesajı görev olan gruplar/kişiler ---
+    static String herMesajMetin(Context c) { return p(c).getString("herMesaj", ""); }
+    static boolean herMesaj(Context c, String kimden, String sohbet) {
+        String k = kimden == null ? null : normalize(kimden).trim();
+        String s = sohbet == null ? null : normalize(sohbet).trim();
+        for (String ad : satirlar(herMesajMetin(c))) {
+            String n = normalize(ad).trim();
+            if (!n.isEmpty() && (n.equals(k) || n.equals(s))) return true;
+        }
+        return false;
+    }
+
+    // --- Kendine not sohbeti (bu sohbetteki her mesaj görev, kendi mesajın dahil) ---
+    static String kendiSohbet(Context c) { return p(c).getString("kendiSohbet", "").trim(); }
+    static boolean kendiSohbetMi(Context c, String sohbet) {
+        String ad = kendiSohbet(c);
+        if (ad.isEmpty() || sohbet == null) return false;
+        return normalize(ad).trim().equals(normalize(sohbet).trim());
+    }
+
     // --- Fotoğraf ---
     static boolean foto(Context c) { return p(c).getBoolean("foto", true); }
     static boolean ekranGoruntusu(Context c) { return p(c).getBoolean("ekranGoruntusu", false); }

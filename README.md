@@ -6,7 +6,9 @@ WhatsApp'a gelen mesajlardan yapılacaklar listesi çıkaran, **tamamen telefonu
 - **Anahtar kelime:** fatura, beyanname, SGK, ödeme, KDV, gönder, acil... geçen mesajlar görev olur (liste düzenlenebilir).
 - **Önemli kişiler / gruplar:** Seçtiğin kişilerin her mesajı görev sayılır. İstersen *sadece* onlar takip edilir. Kişiler, mesaj gelenler listesinden işaretlenerek seçilir.
 - **Fotoğraf okuma:** WhatsApp'a gelen fotoğraflardaki yazılar (fatura, dekont, tahakkuk fişi...) telefonda okunur, anahtar kelime ya da önemli kişi kuralına uyanlar görev olur. Ayrıca herhangi bir fotoğraf *Paylaş > WA Görevler* ile ya da menüdeki *Fotoğraftan görev* ile eklenebilir.
-- **Ekran okuma:** WhatsApp açıkken ekrandaki mesajları da okur; sessize alınmış sohbetler ve ekran açıkken gelen, bildirim üretmeyen mesajları yakalar (erişilebilirlik izni ister).
+- **Ekran okuma:** WhatsApp açıkken ekrandaki mesajları da okur; sessize alınmış sohbetler ve ekran açıkken gelen, bildirim üretmeyen mesajları yakalar (erişilebilirlik izni ister). Alıntılı/yanıtlı mesajlar yıldızlı eklenir.
+- **Kendine görev kalıbı:** "#yap ...", "görev: ..." gibi bir kalıpla yazdığın (kendi mesajın dahil) her mesaj kesin görev olur, yıldızlanır.
+- **Her mesajı görev olan gruplar + kendine not sohbeti:** Seçtiğin grupların her mesajı, ve kendine kurduğun not sohbetine yazdığın her şey görev olur.
 - **Sohbeti içe aktarma / mesaj paylaşma:** WhatsApp'ta sohbeti "Medya olmadan" dışa aktarıp tarar; tek mesajı Paylaş > WA Görevler ile ekler.
 - **Ekran görüntüsü okuma:** Ekran görüntüsü klasörüne düşen görüntülerdeki yazıları da okur.
 - **SMS okuma:** Gelen banka/GİB/SGK SMS'lerinden anahtar kelime geçenleri (tutar/tarihiyle) görev yapar. Son SMS'leri tek seferde tarama da var. İnternet yok.

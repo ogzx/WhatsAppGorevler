@@ -29,17 +29,43 @@ public final class Gorevlendir {
      */
     static boolean dene(Context c, String kimden, String sohbet, String metin, long zaman,
                         String imza, String foto, boolean tekrarKontrol) {
+        return dene(c, kimden, sohbet, metin, zaman, imza, foto, tekrarKontrol, false);
+    }
+
+    /**
+     * @param oncelikli alıntılanan/yanıtlanan mesaj gibi önemli sayılan → yıldızlı eklenir
+     * @return yeni görev eklendiyse true
+     */
+    static boolean dene(Context c, String kimden, String sohbet, String metin, long zaman,
+                        String imza, String foto, boolean tekrarKontrol, boolean oncelikli) {
         if (metin == null) return false;
         metin = metin.trim();
         if (metin.isEmpty() || OZET.matcher(metin).find()) return false;
-        if (!Ayarlar.kisiUygun(c, kimden, sohbet)) return false;
-        if (benim(c, kimden)) return false;
 
-        boolean onemli = Ayarlar.onemli(c, kimden, sohbet);
-        String eslesen = Ayarlar.eslesen(c, metin);
-        if (eslesen == null) {
-            if (Ayarlar.hepsi(c) || (onemli && Ayarlar.onemliHepsi(c))) eslesen = "";
-            else return false;
+        String eslesen;
+        boolean yildiz = oncelikli;
+
+        // 1) Kendine görev kalıbı ("#yap ...", "görev: ...") — en güçlü, herkesten ve kendinden kabul.
+        String tetikli = Ayarlar.tetikSoyulmus(c, metin);
+        if (tetikli != null && !tetikli.isEmpty()) {
+            metin = tetikli;
+            eslesen = "";
+            yildiz = true;
+        } else {
+            // 2) Kendi not sohbeti: oradaki her mesaj görev (kendi mesajın dahil).
+            boolean kendiSohbet = Ayarlar.kendiSohbetMi(c, sohbet);
+            if (!kendiSohbet) {
+                if (!Ayarlar.kisiUygun(c, kimden, sohbet)) return false;
+                if (benim(c, kimden)) return false;
+            }
+            // 3) Her mesajı görev olan gruplar/kişiler, veya önemli+hepsi, veya genel "hepsi".
+            boolean hepsi = kendiSohbet || Ayarlar.herMesaj(c, kimden, sohbet) || Ayarlar.hepsi(c)
+                    || (Ayarlar.onemli(c, kimden, sohbet) && Ayarlar.onemliHepsi(c));
+            eslesen = Ayarlar.eslesen(c, metin);
+            if (eslesen == null) {
+                if (hepsi) eslesen = "";
+                else return false;
+            }
         }
 
         Db db = Db.get(c);
@@ -50,6 +76,7 @@ public final class Gorevlendir {
         if (id == -1) return false;
         String tutar = Tutar.bul(metin);
         if (tutar != null) db.setTutar(id, tutar);
+        if (yildiz) db.setOncelik(id, true);
         if (son > 0) Hatirlatici.sonTarihleriPlanla(c);
         if (Ayarlar.yeniBildirim(c)) Bildirim.yeniGorev(c, kimden, metin);
         return true;

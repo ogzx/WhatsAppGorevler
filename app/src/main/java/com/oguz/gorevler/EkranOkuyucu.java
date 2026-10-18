@@ -68,7 +68,12 @@ public class EkranOkuyucu extends AccessibilityService {
             if (metin == null) continue;
 
             AccessibilityNodeInfo balon = balon(m);
-            if (balon != null && icindeVar(balon, "status", 4)) continue; // ✓✓ = benim gönderdiğim
+            // ✓✓ = benim gönderdiğim: normalde atla; ama kendi not sohbetinde ya da
+            // "#yap" gibi bir kalıpla başlıyorsa kendi mesajım da görev olabilsin.
+            boolean benimMesajim = balon != null && icindeVar(balon, "status", 4);
+            boolean kendiNot = Ayarlar.kendiSohbetMi(this, sohbet)
+                    || Ayarlar.tetikSoyulmus(this, metin) != null;
+            if (benimMesajim && !kendiNot) continue;
 
             String kimden = balon != null ? ilkYazi(balon, "name_in_group_tv") : null;
             if (kimden == null && balon != null) kimden = ilkYazi(balon, "name_in_group");
@@ -76,8 +81,12 @@ public class EkranOkuyucu extends AccessibilityService {
             else db.kisiGor(kimden);
 
             String saat = balon != null ? ilkYazi(balon, "date") : null;
+            // Alıntılı / yanıtlı mesajlar genelde önemlidir → öncelikli (yıldızlı) ekle.
+            boolean alinti = balon != null && (icindeVar(balon, "quoted_message", 4)
+                    || icindeVar(balon, "quoted_text_holder", 4)
+                    || icindeVar(balon, "conversation_row_quoted", 4));
             String imza = "ekran|" + sohbet + "|" + kimden + "|" + saat + "|" + metin;
-            yeni |= Gorevlendir.dene(this, kimden, sohbet, metin, simdi, imza, null, true);
+            yeni |= Gorevlendir.dene(this, kimden, sohbet, metin, simdi, imza, null, true, alinti);
         }
         return yeni;
     }

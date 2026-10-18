@@ -64,6 +64,31 @@ public class SettingsActivity extends Activity {
         benimAdim.setText(Ayarlar.benimAdim(this));
         kok.addView(benimAdim);
 
+        // ---------------- Kendine görev kalıbı
+        baslik("Kendine görev yaz (kalıp)");
+        aciklama("WhatsApp'ta herhangi bir sohbette bu kalıpla başlayan mesaj kesin görev olur "
+                + "(kendi yazdığın dahil), yıldızlı eklenir. Her satıra bir kalıp. Örn: \"#yap\", "
+                + "\"görev:\". Kendine \"#yap faturayı gönder\" yazarsın, görev olur.");
+        EditText tetik = cokSatir(Ayarlar.tetikMetin(this), 3);
+
+        // ---------------- Her mesajı görev olan gruplar
+        baslik("Her mesajı görev olan gruplar/kişiler");
+        aciklama("Buraya yazdığın grup ya da kişilerin HER mesajı görev olur (anahtar kelime "
+                + "aranmaz). Örn. iş grubun. Her satıra bir ad.");
+        EditText herMesaj = cokSatir(Ayarlar.herMesajMetin(this), 3);
+        Button herMesajSec = dugme("Mesaj gelenlerden seç");
+        herMesajSec.setOnClickListener(v -> kisiSecDialog(herMesaj));
+
+        // ---------------- Kendine not sohbeti
+        baslik("Kendine not sohbeti");
+        aciklama("WhatsApp'ta kendine kurduğun sohbetin adı (ör. kendi adın ya da \"Mesajlarım\"). "
+                + "Bu sohbete yazdığın her şey görev olur.");
+        EditText kendiSohbet = new EditText(this);
+        kendiSohbet.setSingleLine(true);
+        kendiSohbet.setHint("Ör. Oğuz (Siz)");
+        kendiSohbet.setText(Ayarlar.kendiSohbet(this));
+        kok.addView(kendiSohbet);
+
         // ---------------- Anahtar kelimeler
         baslik("Anahtar kelimeler");
         aciklama("Her satıra bir tane. Büyük/küçük harf ve ş/ç/ö/ü/ğ/ı farkı önemsizdir. "
@@ -200,6 +225,9 @@ public class SettingsActivity extends Activity {
                     .putBoolean("hepsi", hepsi.isChecked())
                     .putBoolean("ekran", ekran.isChecked())
                     .putString("benimAdim", benimAdim.getText().toString().trim())
+                    .putString("tetik", tetik.getText().toString())
+                    .putString("herMesaj", herMesaj.getText().toString())
+                    .putString("kendiSohbet", kendiSohbet.getText().toString().trim())
                     .putString("kelimeler", kelimeler.getText().toString())
                     .putString("onemli", onemliler.getText().toString())
                     .putBoolean("onemliHepsi", onemliHepsi.isChecked())
