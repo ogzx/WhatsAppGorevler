@@ -114,6 +114,33 @@ public class SettingsActivity extends Activity {
                 + "göreve son tarih yazar ve o gün hatırlatır. Bir görevi basılı tutup son tarihi "
                 + "elle de belirleyebilirsiniz.");
 
+        // ---------------- SMS
+        baslik("SMS okuma (banka / GİB / SGK)");
+        Switch sms = anahtar("Gelen SMS'lerdeki görevleri yakala", Ayarlar.sms(this));
+        aciklama("Banka, GİB ve SGK çoğu ödeme/son tarih bilgisini SMS ile yollar. Uygulama gelen "
+                + "SMS'leri telefonda okur; anahtar kelime geçenleri (ve varsa tutar/tarih) görev yapar. "
+                + "İnternet yok, SMS dışarı gönderilmez. SMS izni gerekir.");
+        Button smsIzin = dugme("SMS iznini ver");
+        smsIzin.setOnClickListener(v -> {
+            if (SmsAlici.izinVar(this) && SmsAlici.okumaIzniVar(this)) {
+                Toast.makeText(this, "İzin zaten verilmiş", Toast.LENGTH_SHORT).show();
+            } else {
+                requestPermissions(new String[]{
+                        Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS}, 3);
+            }
+        });
+        Button smsTara = dugme("Son 50 SMS'i şimdi tara");
+        smsTara.setOnClickListener(v -> {
+            int n = SmsAlici.sonlariTara(this, 50);
+            if (n < 0) Toast.makeText(this, "Önce SMS iznini verin", Toast.LENGTH_SHORT).show();
+            else Toast.makeText(this, n + " görev eklendi", Toast.LENGTH_SHORT).show();
+        });
+
+        // ---------------- PDF
+        baslik("PDF / e-fatura");
+        aciklama("Bir PDF'i (e-fatura, e-arşiv, dekont) Paylaş > PDF'ten görev ile gönderin; "
+                + "uygulama içeriğini telefonda okuyup tutar ve tarihiyle görev yapar.");
+
         // ---------------- Periyodik görevler
         baslik("Periyodik vergi görevleri");
         Switch periyodik = anahtar("Her ay tekrar eden hatırlatmaları oluştur",
@@ -180,6 +207,7 @@ public class SettingsActivity extends Activity {
                     .putBoolean("foto", foto.isChecked())
                     .putBoolean("ekranGoruntusu", ekranGoruntusu.isChecked())
                     .putBoolean("tarihYakala", tarihYakala.isChecked())
+                    .putBoolean("sms", sms.isChecked())
                     .putBoolean("periyodik", periyodik.isChecked())
                     .putString("periyodikSecim", periyodikSecim.getText().toString())
                     .putBoolean("saatlik", saatlik.isChecked())

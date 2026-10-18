@@ -9,6 +9,8 @@ WhatsApp'a gelen mesajlardan yapılacaklar listesi çıkaran, **tamamen telefonu
 - **Ekran okuma:** WhatsApp açıkken ekrandaki mesajları da okur; sessize alınmış sohbetler ve ekran açıkken gelen, bildirim üretmeyen mesajları yakalar (erişilebilirlik izni ister).
 - **Sohbeti içe aktarma / mesaj paylaşma:** WhatsApp'ta sohbeti "Medya olmadan" dışa aktarıp tarar; tek mesajı Paylaş > WA Görevler ile ekler.
 - **Ekran görüntüsü okuma:** Ekran görüntüsü klasörüne düşen görüntülerdeki yazıları da okur.
+- **SMS okuma:** Gelen banka/GİB/SGK SMS'lerinden anahtar kelime geçenleri (tutar/tarihiyle) görev yapar. Son SMS'leri tek seferde tarama da var. İnternet yok.
+- **PDF / e-fatura okuma:** Bir PDF'i Paylaş > PDF'ten görev ile gönderince içeriğini telefonda okuyup görev yapar.
 - **Son tarih yakalama:** "15'ine kadar", "ayın sonuna", "15 Kasım", "yarın" gibi ifadeleri okuyup göreve son tarih koyar ve o gün hatırlatır. Elle de son tarih verilebilir.
 - **Periyodik vergi görevleri:** KDV, muhtasar, SGK gibi her ay tekrar eden hatırlatmaları otomatik oluşturur (günleri düzenlenebilir; resmî takvimi kendin doğrula).
 - **Mükellef/firma etiketi:** Görevleri firmaya göre etiketle ve süz.

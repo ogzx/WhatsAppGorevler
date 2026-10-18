@@ -68,6 +68,9 @@ public final class Ayarlar {
     // --- Tarih yakalama ---
     static boolean tarihYakala(Context c) { return p(c).getBoolean("tarihYakala", true); }
 
+    // --- SMS okuma ---
+    static boolean sms(Context c) { return p(c).getBoolean("sms", false); }
+
     // --- Periyodik vergi görevleri ---
     static boolean periyodik(Context c) { return p(c).getBoolean("periyodik", false); }
     static String periyodikSecim(Context c) { return p(c).getString("periyodikSecim", ""); }

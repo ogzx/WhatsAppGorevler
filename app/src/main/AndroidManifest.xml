@@ -20,6 +20,9 @@
         android:maxSdkVersion="32" />
     <!-- Telefon yeniden başlayınca saatlik hatırlatmayı tekrar kurmak -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Banka/GİB/SGK SMS'lerini okumak (yalnızca telefonda işlenir, dışarı gönderilmez) -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
 
     <application
         android:allowBackup="false"
@@ -53,6 +56,18 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- Paylaş > WA Görevler ile PDF / e-fatura okuma -->
+        <activity
+            android:name=".PdfActivity"
+            android:exported="true"
+            android:label="PDF'ten görev">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
             </intent-filter>
         </activity>
 
@@ -126,6 +141,16 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Gelen SMS'leri okuma (banka/GİB/SGK) -->
+        <receiver
+            android:name=".SmsAlici"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="500">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
 

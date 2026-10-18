@@ -3,6 +3,7 @@ package com.oguz.gorevler;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 
@@ -39,6 +40,15 @@ public final class Ocr {
             sonuc.al(null);
             return;
         }
+        tanima().process(resim)
+                .addOnSuccessListener(t -> sonuc.al(t.getText()))
+                .addOnFailureListener(e -> sonuc.al(null));
+    }
+
+    /** Bir bitmap'teki (ör. PDF sayfası) yazıyı okur. */
+    static void oku(Bitmap bmp, Sonuc sonuc) {
+        if (bmp == null) { sonuc.al(null); return; }
+        InputImage resim = InputImage.fromBitmap(bmp, 0);
         tanima().process(resim)
                 .addOnSuccessListener(t -> sonuc.al(t.getText()))
                 .addOnFailureListener(e -> sonuc.al(null));
