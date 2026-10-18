@@ -48,10 +48,9 @@ public final class Gorevlendir {
         long son = Ayarlar.tarihYakala(c) ? Tarih.bul(metin, zaman, Ayarlar.basSaat(c)) : 0;
         long id = db.ekleId(kimden, sohbet, metin, zaman, eslesen, imza, foto, son, null);
         if (id == -1) return false;
-        if (son > 0) {
-            Db.Gorev g = db.getir(id);
-            if (g != null) Hatirlatici.sonTarihleriPlanla(c);
-        }
+        String tutar = Tutar.bul(metin);
+        if (tutar != null) db.setTutar(id, tutar);
+        if (son > 0) Hatirlatici.sonTarihleriPlanla(c);
         if (Ayarlar.yeniBildirim(c)) Bildirim.yeniGorev(c, kimden, metin);
         return true;
     }

@@ -31,15 +31,28 @@ public final class Bildirim {
                 KANAL_SON, "Son tarih hatırlatması", NotificationManager.IMPORTANCE_HIGH));
     }
 
-    /** Bir görevin son tarihi geldiğinde gösterilen hatırlatma. */
+    /** Bir görevin son tarihi geldiğinde gösterilen hatırlatma (Tamamla / Ertele düğmeleriyle). */
     static void sonTarih(Context c, Db.Gorev g) {
         String baslik = "Son tarih" + (g.firma != null ? " · " + g.firma : "");
+
+        PendingIntent tamamla = PendingIntent.getBroadcast(c, (int) (300000 + g.id),
+                new Intent(c, GorevAksiyonReceiver.class).setAction(GorevAksiyonReceiver.TAMAMLA)
+                        .putExtra(GorevAksiyonReceiver.EXTRA_ID, g.id),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent ertele = PendingIntent.getBroadcast(c, (int) (400000 + g.id),
+                new Intent(c, GorevAksiyonReceiver.class).setAction(GorevAksiyonReceiver.ERTELE)
+                        .putExtra(GorevAksiyonReceiver.EXTRA_ID, g.id),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Icon ikon = Icon.createWithResource(c, R.drawable.ic_bildirim);
+
         Notification n = new Notification.Builder(c, KANAL_SON)
                 .setSmallIcon(R.drawable.ic_bildirim)
                 .setContentTitle(baslik)
                 .setContentText(tekSatir(g.metin, 120))
                 .setStyle(new Notification.BigTextStyle().bigText(g.metin))
                 .setContentIntent(uygulamayiAc(c))
+                .addAction(new Notification.Action.Builder(ikon, "Tamamla", tamamla).build())
+                .addAction(new Notification.Action.Builder(ikon, "Ertele (1 gün)", ertele).build())
                 .setAutoCancel(true)
                 .build();
         c.getSystemService(NotificationManager.class)

@@ -25,6 +25,8 @@ public class Db extends SQLiteOpenHelper {
         String foto;
         long son;     // son tarih (ms), 0 = yok
         String firma; // mükellef/firma etiketi, null = yok
+        boolean oncelik; // yıldızlı
+        String tutar; // yakalanan tutar (ör. "1.250 TL"), null = yok
     }
 
     private static Db ornek;
@@ -35,7 +37,7 @@ public class Db extends SQLiteOpenHelper {
     }
 
     private Db(Context c) {
-        super(c, "gorevler.db", null, 3);
+        super(c, "gorevler.db", null, 4);
     }
 
     @Override
@@ -51,7 +53,9 @@ public class Db extends SQLiteOpenHelper {
                 + "imza TEXT UNIQUE,"
                 + "foto TEXT,"
                 + "son INTEGER NOT NULL DEFAULT 0,"
-                + "firma TEXT)");
+                + "firma TEXT,"
+                + "oncelik INTEGER NOT NULL DEFAULT 0,"
+                + "tutar TEXT)");
         kisiTablosu(db);
     }
 
@@ -69,10 +73,15 @@ public class Db extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE gorev ADD COLUMN son INTEGER NOT NULL DEFAULT 0");
             db.execSQL("ALTER TABLE gorev ADD COLUMN firma TEXT");
         }
+        if (eski < 4) {
+            db.execSQL("ALTER TABLE gorev ADD COLUMN oncelik INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE gorev ADD COLUMN tutar TEXT");
+        }
     }
 
     private static final String[] ALANLAR = {
-            "id", "kimden", "sohbet", "metin", "zaman", "eslesen", "tamam", "foto", "son", "firma"};
+            "id", "kimden", "sohbet", "metin", "zaman", "eslesen", "tamam", "foto", "son", "firma",
+            "oncelik", "tutar"};
 
     private static Gorev oku(Cursor c) {
         Gorev g = new Gorev();
@@ -86,6 +95,8 @@ public class Db extends SQLiteOpenHelper {
         g.foto = c.getString(7);
         g.son = c.getLong(8);
         g.firma = c.getString(9);
+        g.oncelik = c.getInt(10) == 1;
+        g.tutar = c.getString(11);
         return g;
     }
 
@@ -119,18 +130,30 @@ public class Db extends SQLiteOpenHelper {
     }
 
     public synchronized List<Gorev> liste(boolean tamamlananlar) {
-        return liste(tamamlananlar, null);
+        return liste(tamamlananlar, null, null);
     }
 
-    /** Açık/tamam görevler; firma verilirse yalnızca o firmanınkiler. Son tarihi olanlar öne. */
     public synchronized List<Gorev> liste(boolean tamamlananlar, String firma) {
+        return liste(tamamlananlar, firma, null);
+    }
+
+    /**
+     * Açık/tamam görevler; firma verilirse yalnızca o firma; ara verilirse metninde geçenler.
+     * Sıra: yıldızlılar önce, sonra son tarihi olanlar tarih sırasına, sonra yeniler.
+     */
+    public synchronized List<Gorev> liste(boolean tamamlananlar, String firma, String ara) {
         List<Gorev> sonuc = new ArrayList<>();
         String sec = "tamam = ?";
         List<String> arg = new ArrayList<>();
         arg.add(tamamlananlar ? "1" : "0");
         if (firma != null) { sec += " AND firma = ?"; arg.add(firma); }
-        // Son tarihi olanlar tarih sırasına göre önce, sonra yeni eklenenler.
-        String sira = "CASE WHEN son > 0 THEN 0 ELSE 1 END, "
+        if (ara != null && !ara.trim().isEmpty()) {
+            sec += " AND (metin LIKE ? OR firma LIKE ? OR kimden LIKE ?)";
+            String a = "%" + ara.trim() + "%";
+            arg.add(a); arg.add(a); arg.add(a);
+        }
+        String sira = "oncelik DESC, "
+                + "CASE WHEN son > 0 THEN 0 ELSE 1 END, "
                 + "CASE WHEN son > 0 THEN son ELSE -zaman END ASC, zaman DESC";
         Cursor c = getReadableDatabase().query("gorev", ALANLAR,
                 sec, arg.toArray(new String[0]), null, null, sira);
@@ -197,6 +220,18 @@ public class Db extends SQLiteOpenHelper {
     public synchronized void setFirma(long id, String firma) {
         ContentValues v = new ContentValues();
         v.put("firma", firma);
+        getWritableDatabase().update("gorev", v, "id = ?", new String[]{String.valueOf(id)});
+    }
+
+    public synchronized void setOncelik(long id, boolean oncelik) {
+        ContentValues v = new ContentValues();
+        v.put("oncelik", oncelik ? 1 : 0);
+        getWritableDatabase().update("gorev", v, "id = ?", new String[]{String.valueOf(id)});
+    }
+
+    public synchronized void setTutar(long id, String tutar) {
+        ContentValues v = new ContentValues();
+        v.put("tutar", tutar);
         getWritableDatabase().update("gorev", v, "id = ?", new String[]{String.valueOf(id)});
     }
 
@@ -290,6 +325,8 @@ public class Db extends SQLiteOpenHelper {
         v.put("foto", g.foto);
         v.put("son", g.son);
         v.put("firma", g.firma);
+        v.put("oncelik", g.oncelik ? 1 : 0);
+        v.put("tutar", g.tutar);
         getWritableDatabase().insertWithOnConflict("gorev", null, v, SQLiteDatabase.CONFLICT_IGNORE);
     }
 

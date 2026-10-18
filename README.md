@@ -16,7 +16,13 @@ WhatsApp'a gelen mesajlardan yapılacaklar listesi çıkaran, **tamamen telefonu
 - **Ana ekran widget'ı:** Bugünün görevlerini ana ekranda gösterir; satıra dokununca tamamlanır.
 - **Hızlı Ayarlar kutucuğu:** Bildirim panelinden panodaki metni tek dokunuşla görev yapar.
 - **Yedekleme/geri yükleme:** Görevleri ve ayarları bir dosyaya yedekle, geri yükle (internet yok, dosya sende kalır).
-- Dokun → tamamla, basılı tut → kopyala / düzenle / son tarih / firma / sil / fotoğrafı aç. Elle görev ekleme, paylaşma.
+- **Yıldız (öncelik):** Önemli görevleri yıldızla, listenin başına gelir.
+- **Arama ve gruplama:** Görevlerde ara; son tarihe göre Gecikmiş / Bugün / Bu hafta / Sonra başlıklarıyla grupla.
+- **Tutar yakalama:** Mesajdaki "1.250 TL" gibi tutarı okuyup görevin yanında gösterir.
+- **Bildirimde Tamamla / Ertele:** Son tarih bildiriminden görevi doğrudan tamamla ya da 1 gün ertele.
+- **Karanlık tema:** Sistem karanlık moduna uyar.
+- **Sesli ekleme:** Konuşarak görev ekle (cihazın ses tanıması; Türkçe).
+- Dokun → tamamla, basılı tut → yıldızla / kopyala / düzenle / son tarih / firma / sil / fotoğrafı aç. Elle görev ekleme, paylaşma.
 
 ## Gizlilik
 - İnternet izni yok (fotoğraf kütüphanesinin eklediği ağ izinleri de zorla kaldırıldı).

@@ -51,20 +51,31 @@ public class MainActivity extends Activity {
             new SimpleDateFormat("dd.MM HH:mm", Locale.forLanguageTag("tr-TR"));
 
     private boolean tamamGoster = false;
-    private String firmaFiltre = null; // null = tümü
+    private boolean grupla = true;        // son tarihe göre başlıklı gruplama
+    private String firmaFiltre = null;    // null = tümü
+    private String aramaMetni = null;     // null/boş = arama yok
     private LinearLayout uyari, ekranUyari;
+    private EditText aramaKutu;
     private Button sekmeAcik, sekmeTamam;
     private TextView bos;
     private GorevAdapter adapter;
+    private final List<Object> gosterim = new ArrayList<>(); // başlık (String) + görevler
+
+    private int renkYazi, renkIkincil, renkYesil;
 
     private static final int ISTEK_YEDEK = 11;
     private static final int ISTEK_GERIYUKLE = 12;
+    private static final int ISTEK_SES = 13;
     private final SimpleDateFormat sonBicim =
             new SimpleDateFormat("dd.MM.yyyy", Locale.forLanguageTag("tr-TR"));
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        renkYazi = getColor(R.color.yaziRenk);
+        renkIkincil = getColor(R.color.ikincilRenk);
+        renkYesil = getColor(R.color.yesil);
 
         LinearLayout kok = new LinearLayout(this);
         kok.setOrientation(LinearLayout.VERTICAL);
@@ -102,6 +113,23 @@ public class MainActivity extends Activity {
         ekranUyari.addView(ekranButon);
         kok.addView(ekranUyari);
 
+        // Arama çubuğu (menüden açılır/kapanır)
+        aramaKutu = new EditText(this);
+        aramaKutu.setHint("Görevlerde ara…");
+        aramaKutu.setSingleLine(true);
+        aramaKutu.setInputType(InputType.TYPE_CLASS_TEXT);
+        aramaKutu.setPadding(dp(16), dp(8), dp(16), dp(8));
+        aramaKutu.setVisibility(View.GONE);
+        aramaKutu.addTextChangedListener(new android.text.TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
+                aramaMetni = s.toString().trim().isEmpty() ? null : s.toString().trim();
+                yenile();
+            }
+            public void afterTextChanged(android.text.Editable s) { }
+        });
+        kok.addView(aramaKutu);
+
         // Sekmeler
         LinearLayout sekmeler = new LinearLayout(this);
         sekmeler.setOrientation(LinearLayout.HORIZONTAL);
@@ -131,15 +159,19 @@ public class MainActivity extends Activity {
         liste.setAdapter(adapter);
 
         liste.setOnItemClickListener((p, v, konum, id) -> {
-            Db.Gorev g = veriler.get(konum);
+            Object o = gosterim.get(konum);
+            if (!(o instanceof Db.Gorev)) return;
+            Db.Gorev g = (Db.Gorev) o;
             Db.get(this).setTamam(g.id, !g.tamam);
             Toast.makeText(this, g.tamam ? "Yapılacaklara geri alındı" : "Tamamlandı ✓",
                     Toast.LENGTH_SHORT).show();
+            GorevWidget.hepsiniYenile(this);
             yenile();
         });
 
         liste.setOnItemLongClickListener((p, v, konum, id) -> {
-            secenekler(veriler.get(konum));
+            Object o = gosterim.get(konum);
+            if (o instanceof Db.Gorev) secenekler((Db.Gorev) o);
             return true;
         });
 
@@ -185,7 +217,8 @@ public class MainActivity extends Activity {
     private void yenile() {
         Db db = Db.get(this);
         veriler.clear();
-        veriler.addAll(db.liste(tamamGoster, firmaFiltre));
+        veriler.addAll(db.liste(tamamGoster, firmaFiltre, aramaMetni));
+        gosterimKur();
         adapter.notifyDataSetChanged();
 
         String ek = firmaFiltre != null ? " · " + firmaFiltre : "";
@@ -206,6 +239,39 @@ public class MainActivity extends Activity {
                       + "geldiğinde burada görünecek. Bir göreve dokununca tamamlanır, "
                       + "basılı tutunca seçenekler açılır.");
         }
+    }
+
+    /** gosterim listesini kurar: gruplama açıksa tarih başlıkları ekler. */
+    private void gosterimKur() {
+        gosterim.clear();
+        if (!grupla || tamamGoster || aramaMetni != null) {
+            gosterim.addAll(veriler);
+            return;
+        }
+        String[] basliklar = {"⚠ Gecikmiş", "Bugün", "Bu hafta", "Sonra", "Tarihsiz"};
+        for (int b = 0; b < basliklar.length; b++) {
+            boolean basladi = false;
+            for (Db.Gorev g : veriler) {
+                if (bucket(g) != b) continue;
+                if (!basladi) { gosterim.add(basliklar[b]); basladi = true; }
+                gosterim.add(g);
+            }
+        }
+    }
+
+    private int bucket(Db.Gorev g) {
+        if (g.son <= 0) return 4;
+        long simdi = System.currentTimeMillis();
+        java.util.Calendar c = java.util.Calendar.getInstance();
+        c.set(java.util.Calendar.HOUR_OF_DAY, 0); c.set(java.util.Calendar.MINUTE, 0);
+        c.set(java.util.Calendar.SECOND, 0); c.set(java.util.Calendar.MILLISECOND, 0);
+        long gunBasi = c.getTimeInMillis();
+        long gunSonu = gunBasi + 24L * 3600 * 1000;
+        long haftaSonu = gunBasi + 7L * 24 * 3600 * 1000;
+        if (g.son < gunBasi) return 0;
+        if (g.son < gunSonu) return 1;
+        if (g.son <= haftaSonu) return 2;
+        return 3;
     }
 
     private boolean erisimVar() {
@@ -231,6 +297,7 @@ public class MainActivity extends Activity {
 
     private void secenekler(Db.Gorev g) {
         List<String> secimler = new ArrayList<>();
+        secimler.add(g.oncelik ? "Yıldızı kaldır" : "⭐ Yıldızla (öne al)");
         secimler.add("Kopyala");
         secimler.add("Düzenle");
         secimler.add(g.son > 0 ? "Son tarihi değiştir/kaldır" : "Son tarih belirle");
@@ -243,7 +310,11 @@ public class MainActivity extends Activity {
                 .setTitle(g.kimden != null ? g.kimden : "Görev")
                 .setItems(secim, (d, i) -> {
                     String s = secim[i];
-                    if (s.equals("Kopyala")) {
+                    if (s.startsWith("Yıldız") || s.startsWith("⭐")) {
+                        Db.get(this).setOncelik(g.id, !g.oncelik);
+                        GorevWidget.hepsiniYenile(this);
+                        yenile();
+                    } else if (s.equals("Kopyala")) {
                         ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
                         cm.setPrimaryClip(ClipData.newPlainText("görev", g.metin));
                         Toast.makeText(this, "Kopyalandı", Toast.LENGTH_SHORT).show();
@@ -339,15 +410,18 @@ public class MainActivity extends Activity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0, 1, 0, "+ Ekle").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        menu.add(0, 8, 1, "Firmaya göre süz");
-        menu.add(0, 5, 2, "📷 Fotoğraftan görev");
-        menu.add(0, 7, 3, "Sohbet içe aktar (nasıl?)");
-        menu.add(0, 6, 4, "Listeyi WhatsApp'a gönder");
-        menu.add(0, 3, 5, "Listeyi paylaş");
-        menu.add(0, 9, 6, "Yedekle (dosyaya)");
-        menu.add(0, 10, 7, "Geri yükle (dosyadan)");
-        menu.add(0, 2, 8, "Ayarlar");
-        menu.add(0, 4, 9, "Tamamlananları temizle");
+        menu.add(0, 13, 1, "🔍 Ara").setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menu.add(0, 15, 2, "🎤 Sesli ekle");
+        menu.add(0, 14, 3, "Gruplama (aç/kapat)");
+        menu.add(0, 8, 4, "Firmaya göre süz");
+        menu.add(0, 5, 5, "📷 Fotoğraftan görev");
+        menu.add(0, 7, 6, "Sohbet içe aktar (nasıl?)");
+        menu.add(0, 6, 7, "Listeyi WhatsApp'a gönder");
+        menu.add(0, 3, 8, "Listeyi paylaş");
+        menu.add(0, 9, 9, "Yedekle (dosyaya)");
+        menu.add(0, 10, 10, "Geri yükle (dosyadan)");
+        menu.add(0, 2, 11, "Ayarlar");
+        menu.add(0, 4, 12, "Tamamlananları temizle");
         return true;
     }
 
@@ -358,8 +432,11 @@ public class MainActivity extends Activity {
                 metinDialog("Yeni görev", null, t -> {
                     long simdi = System.currentTimeMillis();
                     long son = Ayarlar.tarihYakala(this) ? Tarih.bul(t, simdi, Ayarlar.basSaat(this)) : 0;
-                    Db.get(this).ekleId("Ben", null, t, simdi, "", "elle|" + simdi, null, son, firmaFiltre);
+                    long id = Db.get(this).ekleId("Ben", null, t, simdi, "", "elle|" + simdi, null, son, firmaFiltre);
+                    String tutar = Tutar.bul(t);
+                    if (tutar != null) Db.get(this).setTutar(id, tutar);
                     Hatirlatici.sonTarihleriPlanla(this);
+                    GorevWidget.hepsiniYenile(this);
                     tamamGoster = false;
                     yenile();
                 });
@@ -372,6 +449,21 @@ public class MainActivity extends Activity {
                 return true;
             case 10:
                 geriYukleSec();
+                return true;
+            case 13:
+                boolean ac = aramaKutu.getVisibility() != View.VISIBLE;
+                aramaKutu.setVisibility(ac ? View.VISIBLE : View.GONE);
+                if (ac) { aramaKutu.requestFocus(); }
+                else { aramaKutu.setText(""); aramaMetni = null; yenile(); }
+                return true;
+            case 14:
+                grupla = !grupla;
+                Toast.makeText(this, grupla ? "Gruplama açık" : "Gruplama kapalı",
+                        Toast.LENGTH_SHORT).show();
+                yenile();
+                return true;
+            case 15:
+                sesliEkle();
                 return true;
             case 5:
                 startActivity(new Intent(this, FotoActivity.class));
@@ -490,10 +582,48 @@ public class MainActivity extends Activity {
         }
     }
 
+    // ---- Sesli ekleme (cihazın ses tanıması) ----
+
+    private void sesliEkle() {
+        Intent i = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        i.putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        i.putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "tr-TR");
+        i.putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Görevi söyleyin…");
+        try {
+            startActivityForResult(i, ISTEK_SES);
+        } catch (Exception e) {
+            Toast.makeText(this, "Ses tanıma bulunamadı (Google uygulaması gerekebilir)",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
     @Override
     protected void onActivityResult(int istek, int sonuc, Intent veri) {
         super.onActivityResult(istek, sonuc, veri);
-        if (sonuc != RESULT_OK || veri == null || veri.getData() == null) return;
+        if (sonuc != RESULT_OK || veri == null) return;
+
+        if (istek == ISTEK_SES) {
+            java.util.ArrayList<String> sonuclar = veri.getStringArrayListExtra(
+                    android.speech.RecognizerIntent.EXTRA_RESULTS);
+            if (sonuclar == null || sonuclar.isEmpty()) return;
+            String t = sonuclar.get(0).trim();
+            if (t.isEmpty()) return;
+            metinDialog("Sesli görev (düzenleyebilirsiniz)", t, metin -> {
+                long simdi = System.currentTimeMillis();
+                long son = Ayarlar.tarihYakala(this) ? Tarih.bul(metin, simdi, Ayarlar.basSaat(this)) : 0;
+                long id = Db.get(this).ekleId("Sesli", null, metin, simdi, "", "ses|" + simdi, null, son, firmaFiltre);
+                String tutar = Tutar.bul(metin);
+                if (tutar != null) Db.get(this).setTutar(id, tutar);
+                Hatirlatici.sonTarihleriPlanla(this);
+                GorevWidget.hepsiniYenile(this);
+                tamamGoster = false;
+                yenile();
+            });
+            return;
+        }
+
+        if (veri.getData() == null) return;
         Uri u = veri.getData();
         try {
             if (istek == ISTEK_YEDEK) {
@@ -512,21 +642,38 @@ public class MainActivity extends Activity {
     // ---- Liste görünümü ----
 
     private class GorevAdapter extends BaseAdapter {
-        @Override public int getCount() { return veriler.size(); }
-        @Override public Object getItem(int i) { return veriler.get(i); }
-        @Override public long getItemId(int i) { return veriler.get(i).id; }
+        @Override public int getCount() { return gosterim.size(); }
+        @Override public Object getItem(int i) { return gosterim.get(i); }
+        @Override public long getItemId(int i) { return i; }
+
+        @Override public int getViewTypeCount() { return 2; }
+        @Override public int getItemViewType(int i) {
+            return gosterim.get(i) instanceof Db.Gorev ? 1 : 0;
+        }
+        @Override public boolean areAllItemsEnabled() { return false; }
+        @Override public boolean isEnabled(int i) { return gosterim.get(i) instanceof Db.Gorev; }
 
         @Override
         public View getView(int i, View eski, ViewGroup ebeveyn) {
+            Object o = gosterim.get(i);
+            if (!(o instanceof Db.Gorev)) {
+                TextView t = (eski instanceof TextView) ? (TextView) eski : new TextView(MainActivity.this);
+                t.setText((String) o);
+                t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+                t.setTypeface(null, Typeface.BOLD);
+                t.setTextColor(renkYesil);
+                t.setPadding(dp(14), dp(12), dp(14), dp(4));
+                return t;
+            }
             Satir s;
-            if (eski == null) {
+            if (eski != null && eski.getTag() instanceof Satir) {
+                s = (Satir) eski.getTag();
+            } else {
                 s = new Satir(MainActivity.this);
                 eski = s.kok;
                 eski.setTag(s);
-            } else {
-                s = (Satir) eski.getTag();
             }
-            s.bagla(veriler.get(i));
+            s.bagla((Db.Gorev) o);
             return eski;
         }
     }
@@ -542,7 +689,7 @@ public class MainActivity extends Activity {
 
             kutu = new TextView(c);
             kutu.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
-            kutu.setTextColor(YESIL);
+            kutu.setTextColor(renkYesil);
             kutu.setPadding(0, 0, dp(12), 0);
             kok.addView(kutu);
 
@@ -571,22 +718,18 @@ public class MainActivity extends Activity {
         void bagla(Db.Gorev g) {
             kutu.setText(g.tamam ? "☑" : "☐");
 
-            StringBuilder u = new StringBuilder();
-            if (g.firma != null && !g.firma.isEmpty()) u.append("🏢 ").append(g.firma);
-            if (g.kimden != null) {
-                if (u.length() > 0) u.append(" · ");
-                u.append(g.kimden);
-            }
-            if (g.sohbet != null && !g.sohbet.equals(g.kimden)) {
-                if (u.length() > 0) u.append(" · ");
-                u.append(g.sohbet);
-            }
-            if (u.length() > 0) u.append(" · ");
-            u.append(tarih.format(new Date(g.zaman)));
-            ust.setText(u.toString());
+            List<String> parca = new ArrayList<>();
+            if (g.firma != null && !g.firma.isEmpty()) parca.add("🏢 " + g.firma);
+            if (g.kimden != null) parca.add(g.kimden);
+            if (g.sohbet != null && !g.sohbet.equals(g.kimden)) parca.add(g.sohbet);
+            if (g.tutar != null) parca.add("💰 " + g.tutar);
+            parca.add(tarih.format(new Date(g.zaman)));
+            String onek = g.oncelik ? "⭐ " : "";
+            ust.setText(onek + TextUtils.join(" · ", parca));
+            ust.setTextColor(renkIkincil);
 
             metin.setText(g.metin);
-            metin.setTextColor(g.tamam ? GRI : Color.parseColor("#1F1F1F"));
+            metin.setTextColor(g.tamam ? renkIkincil : renkYazi);
             if (g.tamam) {
                 metin.setPaintFlags(metin.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             } else {
@@ -617,7 +760,7 @@ public class MainActivity extends Activity {
                 etiket.setText(e.toString());
                 boolean acil = g.son > 0 && !g.tamam
                         && g.son - System.currentTimeMillis() < 2L * 24 * 3600 * 1000;
-                etiket.setTextColor(acil ? Color.parseColor("#C0392B") : YESIL);
+                etiket.setTextColor(acil ? Color.parseColor("#E74C3C") : renkYesil);
             } else {
                 etiket.setVisibility(View.GONE);
             }

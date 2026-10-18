@@ -115,6 +115,11 @@
             android:name=".SonTarihReceiver"
             android:exported="false" />
 
+        <!-- Bildirimdeki Tamamla / Ertele düğmeleri -->
+        <receiver
+            android:name=".GorevAksiyonReceiver"
+            android:exported="false" />
+
         <receiver
             android:name=".BootReceiver"
             android:exported="true">

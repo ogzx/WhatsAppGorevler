@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Sistem karanlık moddayken otomatik seçilir. -->
+    <style name="Tema" parent="android:Theme.Material">
+        <item name="android:colorPrimary">#0B3D38</item>
+        <item name="android:colorPrimaryDark">#063029</item>
+        <item name="android:colorAccent">#25D366</item>
+    </style>
+</resources>
