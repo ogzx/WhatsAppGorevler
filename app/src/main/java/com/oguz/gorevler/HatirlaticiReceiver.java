@@ -9,9 +9,12 @@ public class HatirlaticiReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context c, Intent intent) {
         try {
+            PeriyodikGorev.olustur(c);
+            Gorevlendir.tarihleriIsle(c);
             if (Ayarlar.saatlik(c) && Hatirlatici.saatUygun(c) && Db.get(c).sayi(false) > 0) {
                 Bildirim.liste(c);
             }
+            GorevWidget.hepsiniYenile(c);
         } finally {
             Hatirlatici.planla(c);
         }

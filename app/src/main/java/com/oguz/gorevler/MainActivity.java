@@ -51,10 +51,16 @@ public class MainActivity extends Activity {
             new SimpleDateFormat("dd.MM HH:mm", Locale.forLanguageTag("tr-TR"));
 
     private boolean tamamGoster = false;
+    private String firmaFiltre = null; // null = tümü
     private LinearLayout uyari, ekranUyari;
     private Button sekmeAcik, sekmeTamam;
     private TextView bos;
     private GorevAdapter adapter;
+
+    private static final int ISTEK_YEDEK = 11;
+    private static final int ISTEK_GERIYUKLE = 12;
+    private final SimpleDateFormat sonBicim =
+            new SimpleDateFormat("dd.MM.yyyy", Locale.forLanguageTag("tr-TR"));
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -164,6 +170,9 @@ public class MainActivity extends Activity {
         uyari.setVisibility(erisimVar() ? View.GONE : View.VISIBLE);
         ekranUyari.setVisibility(!Ayarlar.ekran(this) || ekranOkumaAcik(this) ? View.GONE : View.VISIBLE);
         Hatirlatici.planla(this);
+        PeriyodikGorev.olustur(this);
+        Gorevlendir.tarihleriIsle(this);
+        GorevWidget.hepsiniYenile(this);
         yenile();
     }
 
@@ -176,21 +185,27 @@ public class MainActivity extends Activity {
     private void yenile() {
         Db db = Db.get(this);
         veriler.clear();
-        veriler.addAll(db.liste(tamamGoster));
+        veriler.addAll(db.liste(tamamGoster, firmaFiltre));
         adapter.notifyDataSetChanged();
 
-        sekmeAcik.setText("Yapılacak (" + db.sayi(false) + ")");
+        String ek = firmaFiltre != null ? " · " + firmaFiltre : "";
+        sekmeAcik.setText("Yapılacak (" + db.sayi(false) + ")" + (firmaFiltre != null && !tamamGoster ? ek : ""));
         sekmeTamam.setText("Tamamlanan (" + db.sayi(true) + ")");
         sekmeAcik.setTypeface(null, tamamGoster ? Typeface.NORMAL : Typeface.BOLD);
         sekmeTamam.setTypeface(null, tamamGoster ? Typeface.BOLD : Typeface.NORMAL);
         sekmeAcik.setAlpha(tamamGoster ? 0.6f : 1f);
         sekmeTamam.setAlpha(tamamGoster ? 1f : 0.6f);
 
-        bos.setText(tamamGoster
-                ? "Tamamlanan görev yok."
-                : "Yapılacak görev yok.\n\nWhatsApp'a anahtar kelime içeren bir mesaj "
-                  + "geldiğinde burada görünecek. Bir göreve dokununca tamamlanır, "
-                  + "basılı tutunca seçenekler açılır.");
+        if (firmaFiltre != null) {
+            bos.setText("“" + firmaFiltre + "” firmasında "
+                    + (tamamGoster ? "tamamlanan" : "açık") + " görev yok.");
+        } else {
+            bos.setText(tamamGoster
+                    ? "Tamamlanan görev yok."
+                    : "Yapılacak görev yok.\n\nWhatsApp'a anahtar kelime içeren bir mesaj "
+                      + "geldiğinde burada görünecek. Bir göreve dokununca tamamlanır, "
+                      + "basılı tutunca seçenekler açılır.");
+        }
     }
 
     private boolean erisimVar() {
@@ -215,13 +230,39 @@ public class MainActivity extends Activity {
     // ---- Seçenekler / menü ----
 
     private void secenekler(Db.Gorev g) {
-        String[] secim = g.foto != null
-                ? new String[]{"Kopyala", "Düzenle", "Sil", "Fotoğrafı aç"}
-                : new String[]{"Kopyala", "Düzenle", "Sil"};
+        List<String> secimler = new ArrayList<>();
+        secimler.add("Kopyala");
+        secimler.add("Düzenle");
+        secimler.add(g.son > 0 ? "Son tarihi değiştir/kaldır" : "Son tarih belirle");
+        secimler.add(g.firma != null ? "Firmayı değiştir (" + g.firma + ")" : "Firma ata");
+        secimler.add("Sil");
+        if (g.foto != null) secimler.add("Fotoğrafı aç");
+        String[] secim = secimler.toArray(new String[0]);
+
         new AlertDialog.Builder(this)
                 .setTitle(g.kimden != null ? g.kimden : "Görev")
                 .setItems(secim, (d, i) -> {
-                    if (i == 3) {
+                    String s = secim[i];
+                    if (s.equals("Kopyala")) {
+                        ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                        cm.setPrimaryClip(ClipData.newPlainText("görev", g.metin));
+                        Toast.makeText(this, "Kopyalandı", Toast.LENGTH_SHORT).show();
+                    } else if (s.equals("Düzenle")) {
+                        metinDialog("Görevi düzenle", g.metin, yeni -> {
+                            Db.get(this).guncelle(g.id, yeni);
+                            yenile();
+                        });
+                    } else if (s.startsWith("Son tarih")) {
+                        sonTarihSec(g);
+                    } else if (s.startsWith("Firma")) {
+                        firmaSec(g);
+                    } else if (s.equals("Sil")) {
+                        new AlertDialog.Builder(this)
+                                .setMessage("Bu görev silinsin mi?")
+                                .setPositiveButton("Sil", (d2, w) -> { Db.get(this).sil(g.id); yenile(); })
+                                .setNegativeButton("Vazgeç", null)
+                                .show();
+                    } else if (s.equals("Fotoğrafı aç")) {
                         try {
                             Intent ac = new Intent(Intent.ACTION_VIEW);
                             ac.setDataAndType(Uri.parse(g.foto), "image/*");
@@ -230,21 +271,44 @@ public class MainActivity extends Activity {
                         } catch (Exception e) {
                             Toast.makeText(this, "Fotoğraf açılamadı (silinmiş olabilir)", Toast.LENGTH_SHORT).show();
                         }
-                    } else if (i == 0) {
-                        ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                        cm.setPrimaryClip(ClipData.newPlainText("görev", g.metin));
-                        Toast.makeText(this, "Kopyalandı", Toast.LENGTH_SHORT).show();
-                    } else if (i == 1) {
-                        metinDialog("Görevi düzenle", g.metin, yeni -> {
-                            Db.get(this).guncelle(g.id, yeni);
+                    }
+                })
+                .show();
+    }
+
+    /** Göreve son tarih yaz: metinden yakala, elle gir ya da kaldır. */
+    private void sonTarihSec(Db.Gorev g) {
+        metinDialog("Son tarih (gg.aa.yyyy) — boş bırakırsan kaldırılır",
+                g.son > 0 ? sonBicim.format(new Date(g.son)) : "", t -> {
+            long son = Tarih.bul(t, System.currentTimeMillis(), Ayarlar.basSaat(this));
+            Db.get(this).setSon(g.id, son);
+            Hatirlatici.sonTarihleriPlanla(this);
+            Toast.makeText(this, son > 0 ? "Son tarih: " + Tarih.bicim(son) : "Son tarih kaldırıldı",
+                    Toast.LENGTH_SHORT).show();
+            yenile();
+        });
+    }
+
+    /** Göreve firma/mükellef ata. Mevcut firmalar listeden ya da yeni ad. */
+    private void firmaSec(Db.Gorev g) {
+        List<String> firmalar = Db.get(this).firmalar();
+        List<String> secenek = new ArrayList<>(firmalar);
+        secenek.add("+ Yeni firma…");
+        secenek.add("Firmayı kaldır");
+        new AlertDialog.Builder(this)
+                .setTitle("Firma / mükellef")
+                .setItems(secenek.toArray(new String[0]), (d, i) -> {
+                    if (i == secenek.size() - 1) {
+                        Db.get(this).setFirma(g.id, null);
+                        yenile();
+                    } else if (i == secenek.size() - 2) {
+                        metinDialog("Yeni firma adı", null, ad -> {
+                            Db.get(this).setFirma(g.id, ad);
                             yenile();
                         });
                     } else {
-                        new AlertDialog.Builder(this)
-                                .setMessage("Bu görev silinsin mi?")
-                                .setPositiveButton("Sil", (d2, w) -> { Db.get(this).sil(g.id); yenile(); })
-                                .setNegativeButton("Vazgeç", null)
-                                .show();
+                        Db.get(this).setFirma(g.id, firmalar.get(i));
+                        yenile();
                     }
                 })
                 .show();
@@ -275,12 +339,15 @@ public class MainActivity extends Activity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0, 1, 0, "+ Ekle").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        menu.add(0, 5, 1, "📷 Fotoğraftan görev");
-        menu.add(0, 7, 2, "Sohbet içe aktar (nasıl?)");
-        menu.add(0, 6, 2, "Listeyi WhatsApp'a gönder");
-        menu.add(0, 3, 3, "Listeyi paylaş");
-        menu.add(0, 2, 4, "Ayarlar");
-        menu.add(0, 4, 5, "Tamamlananları temizle");
+        menu.add(0, 8, 1, "Firmaya göre süz");
+        menu.add(0, 5, 2, "📷 Fotoğraftan görev");
+        menu.add(0, 7, 3, "Sohbet içe aktar (nasıl?)");
+        menu.add(0, 6, 4, "Listeyi WhatsApp'a gönder");
+        menu.add(0, 3, 5, "Listeyi paylaş");
+        menu.add(0, 9, 6, "Yedekle (dosyaya)");
+        menu.add(0, 10, 7, "Geri yükle (dosyadan)");
+        menu.add(0, 2, 8, "Ayarlar");
+        menu.add(0, 4, 9, "Tamamlananları temizle");
         return true;
     }
 
@@ -290,10 +357,21 @@ public class MainActivity extends Activity {
             case 1:
                 metinDialog("Yeni görev", null, t -> {
                     long simdi = System.currentTimeMillis();
-                    Db.get(this).ekle("Ben", null, t, simdi, "", "elle|" + simdi, null);
+                    long son = Ayarlar.tarihYakala(this) ? Tarih.bul(t, simdi, Ayarlar.basSaat(this)) : 0;
+                    Db.get(this).ekleId("Ben", null, t, simdi, "", "elle|" + simdi, null, son, firmaFiltre);
+                    Hatirlatici.sonTarihleriPlanla(this);
                     tamamGoster = false;
                     yenile();
                 });
+                return true;
+            case 8:
+                firmayaGoreSuz();
+                return true;
+            case 9:
+                yedekle();
+                return true;
+            case 10:
+                geriYukleSec();
                 return true;
             case 5:
                 startActivity(new Intent(this, FotoActivity.class));
@@ -364,6 +442,73 @@ public class MainActivity extends Activity {
         }
     }
 
+    // ---- Firma süzme ----
+
+    private void firmayaGoreSuz() {
+        List<String> firmalar = Db.get(this).firmalar();
+        List<String> secenek = new ArrayList<>();
+        secenek.add("Tümü");
+        secenek.addAll(firmalar);
+        if (firmalar.isEmpty()) {
+            Toast.makeText(this, "Henüz firma etiketi yok. Bir görevi basılı tutup firma atayın.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Firmaya göre süz")
+                .setItems(secenek.toArray(new String[0]), (d, i) -> {
+                    firmaFiltre = i == 0 ? null : secenek.get(i);
+                    yenile();
+                })
+                .show();
+    }
+
+    // ---- Yedekleme / geri yükleme (dosya; internet yok) ----
+
+    private void yedekle() {
+        String ad = "wa-gorevler-yedek-"
+                + new SimpleDateFormat("yyyyMMdd", Locale.US).format(new Date()) + ".json";
+        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("application/json")
+                .putExtra(Intent.EXTRA_TITLE, ad);
+        try {
+            startActivityForResult(i, ISTEK_YEDEK);
+        } catch (Exception e) {
+            Toast.makeText(this, "Dosya seçici açılamadı", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void geriYukleSec() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("*/*");
+        try {
+            startActivityForResult(i, ISTEK_GERIYUKLE);
+        } catch (Exception e) {
+            Toast.makeText(this, "Dosya seçici açılamadı", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int istek, int sonuc, Intent veri) {
+        super.onActivityResult(istek, sonuc, veri);
+        if (sonuc != RESULT_OK || veri == null || veri.getData() == null) return;
+        Uri u = veri.getData();
+        try {
+            if (istek == ISTEK_YEDEK) {
+                Yedek.disaAktar(this, u);
+                Toast.makeText(this, "Yedek kaydedildi", Toast.LENGTH_SHORT).show();
+            } else if (istek == ISTEK_GERIYUKLE) {
+                int n = Yedek.iceAktar(this, u);
+                Toast.makeText(this, n + " görev geri yüklendi", Toast.LENGTH_SHORT).show();
+                yenile();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "İşlem başarısız: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
     // ---- Liste görünümü ----
 
     private class GorevAdapter extends BaseAdapter {
@@ -427,7 +572,11 @@ public class MainActivity extends Activity {
             kutu.setText(g.tamam ? "☑" : "☐");
 
             StringBuilder u = new StringBuilder();
-            if (g.kimden != null) u.append(g.kimden);
+            if (g.firma != null && !g.firma.isEmpty()) u.append("🏢 ").append(g.firma);
+            if (g.kimden != null) {
+                if (u.length() > 0) u.append(" · ");
+                u.append(g.kimden);
+            }
             if (g.sohbet != null && !g.sohbet.equals(g.kimden)) {
                 if (u.length() > 0) u.append(" · ");
                 u.append(g.sohbet);
@@ -445,7 +594,20 @@ public class MainActivity extends Activity {
             }
 
             StringBuilder e = new StringBuilder();
-            if (g.eslesen != null && !g.eslesen.isEmpty()) e.append('#').append(g.eslesen);
+            if (g.son > 0 && !g.tamam) {
+                long kalan = g.son - System.currentTimeMillis();
+                long gun = kalan / (24L * 3600 * 1000);
+                String ne;
+                if (kalan < 0) ne = "⏰ GEÇTİ (" + sonBicim.format(new Date(g.son)) + ")";
+                else if (gun == 0) ne = "⏰ bugün son!";
+                else if (gun == 1) ne = "⏰ yarın son";
+                else ne = "⏰ " + sonBicim.format(new Date(g.son)) + " (" + gun + " gün)";
+                e.append(ne);
+            }
+            if (g.eslesen != null && !g.eslesen.isEmpty()) {
+                if (e.length() > 0) e.append("  ·  ");
+                e.append('#').append(g.eslesen);
+            }
             if (g.foto != null) {
                 if (e.length() > 0) e.append("  ·  ");
                 e.append("📷 fotoğraf (basılı tut → aç)");
@@ -453,6 +615,9 @@ public class MainActivity extends Activity {
             if (e.length() > 0) {
                 etiket.setVisibility(View.VISIBLE);
                 etiket.setText(e.toString());
+                boolean acil = g.son > 0 && !g.tamam
+                        && g.son - System.currentTimeMillis() < 2L * 24 * 3600 * 1000;
+                etiket.setTextColor(acil ? Color.parseColor("#C0392B") : YESIL);
             } else {
                 etiket.setVisibility(View.GONE);
             }

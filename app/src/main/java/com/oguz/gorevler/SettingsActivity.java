@@ -101,6 +101,31 @@ public class SettingsActivity extends Activity {
                         : Manifest.permission.READ_EXTERNAL_STORAGE}, 2);
             }
         });
+        Switch ekranGoruntusu = anahtar("Ekran görüntülerindeki yazıları da oku",
+                Ayarlar.ekranGoruntusu(this));
+        aciklama("Ekran görüntüsü klasörüne düşen görüntüler de okunur; anahtar kelime geçenler "
+                + "görev olur. Bir mesajın ekran görüntüsünü alıp böylece yakalayabilirsiniz.");
+
+        // ---------------- Tarih yakalama
+        baslik("Son tarih");
+        Switch tarihYakala = anahtar("Mesajdaki tarihi yakala ve hatırlatma kur",
+                Ayarlar.tarihYakala(this));
+        aciklama("\"15'ine kadar\", \"ayın sonuna\", \"15 Kasım\", \"yarın\" gibi ifadeleri okuyup "
+                + "göreve son tarih yazar ve o gün hatırlatır. Bir görevi basılı tutup son tarihi "
+                + "elle de belirleyebilirsiniz.");
+
+        // ---------------- Periyodik görevler
+        baslik("Periyodik vergi görevleri");
+        Switch periyodik = anahtar("Her ay tekrar eden hatırlatmaları oluştur",
+                Ayarlar.periyodik(this));
+        aciklama("Her satır: Ad|gün. Örn. \"KDV Beyannamesi|28\". Son tarihe 15 gün kala görev "
+                + "oluşur. DİKKAT: Buradaki günler yalnızca hatırlatmadır, resmî son tarih değildir; "
+                + "beyanname/ödeme günleri yıla ve mükellefe göre değişir, GİB/SGK takvimini esas alın.");
+        String perMetin = Ayarlar.periyodikSecim(this);
+        if (perMetin.trim().isEmpty()) perMetin = PeriyodikGorev.VARSAYILAN;
+        EditText periyodikSecim = cokSatir(perMetin, 4);
+        Button perVarsayilan = dugme("Örnek listeye dön");
+        perVarsayilan.setOnClickListener(v -> periyodikSecim.setText(PeriyodikGorev.VARSAYILAN));
 
         // ---------------- Saatlik hatırlatma
         baslik("Saat başı hatırlatma");
@@ -153,6 +178,10 @@ public class SettingsActivity extends Activity {
                     .putBoolean("onemliHepsi", onemliHepsi.isChecked())
                     .putBoolean("sadeceOnemli", sadeceOnemli.isChecked())
                     .putBoolean("foto", foto.isChecked())
+                    .putBoolean("ekranGoruntusu", ekranGoruntusu.isChecked())
+                    .putBoolean("tarihYakala", tarihYakala.isChecked())
+                    .putBoolean("periyodik", periyodik.isChecked())
+                    .putString("periyodikSecim", periyodikSecim.getText().toString())
                     .putBoolean("saatlik", saatlik.isChecked())
                     .putInt("basSaat", saat(bas, 9))
                     .putInt("bitSaat", saat(bit, 19))
@@ -160,6 +189,8 @@ public class SettingsActivity extends Activity {
                     .putBoolean("yeniBildirim", yeniBildirim.isChecked())
                     .apply();
             Hatirlatici.planla(this);
+            Hatirlatici.sonTarihleriPlanla(this);
+            PeriyodikGorev.olustur(this);
             Toast.makeText(this, "Kaydedildi", Toast.LENGTH_SHORT).show();
             finish();
         });

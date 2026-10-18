@@ -45,9 +45,28 @@ public final class Gorevlendir {
         Db db = Db.get(c);
         if (tekrarKontrol && db.varMi(metin, sohbet, kimden, zaman - TEKRAR_PENCERE)) return false;
 
-        boolean eklendi = db.ekle(kimden, sohbet, metin, zaman, eslesen, imza, foto);
-        if (eklendi && Ayarlar.yeniBildirim(c)) Bildirim.yeniGorev(c, kimden, metin);
-        return eklendi;
+        long son = Ayarlar.tarihYakala(c) ? Tarih.bul(metin, zaman, Ayarlar.basSaat(c)) : 0;
+        long id = db.ekleId(kimden, sohbet, metin, zaman, eslesen, imza, foto, son, null);
+        if (id == -1) return false;
+        if (son > 0) {
+            Db.Gorev g = db.getir(id);
+            if (g != null) Hatirlatici.sonTarihleriPlanla(c);
+        }
+        if (Ayarlar.yeniBildirim(c)) Bildirim.yeniGorev(c, kimden, metin);
+        return true;
+    }
+
+    /** Son tarihi henüz çıkarılmamış açık görevleri tarar, bulursa işaretler ve alarm kurar. */
+    static void tarihleriIsle(Context c) {
+        if (!Ayarlar.tarihYakala(c)) return;
+        boolean degisti = false;
+        for (Db.Gorev g : Db.get(c).liste(false)) {
+            if (g.son > 0) continue;
+            long son = Tarih.bul(g.metin, g.zaman, Ayarlar.basSaat(c));
+            if (son > 0) { Db.get(c).setSon(g.id, son); degisti = true; }
+        }
+        Hatirlatici.sonTarihleriPlanla(c);
+        if (degisti) ekraniYenile();
     }
 
     /** Kullanıcının kendi gönderdiği mesaj mı? (ayarlardaki "WhatsApp'taki adım") */

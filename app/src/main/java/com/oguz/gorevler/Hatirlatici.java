@@ -32,6 +32,22 @@ public final class Hatirlatici {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
+    static final String EXTRA_GOREV = "gorev_id";
+
+    /** Son tarihi olan tüm açık görevler için hatırlatma alarmı kurar. */
+    static void sonTarihleriPlanla(Context c) {
+        AlarmManager am = c.getSystemService(AlarmManager.class);
+        long simdi = System.currentTimeMillis();
+        for (Db.Gorev g : Db.get(c).sonTarihliler()) {
+            PendingIntent pi = PendingIntent.getBroadcast(c, (int) (100000 + g.id),
+                    new Intent(c, SonTarihReceiver.class).putExtra(EXTRA_GOREV, g.id),
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            // Zamanı geçmiş ama tamamlanmamışsa kısa süre sonra bir kez hatırlat.
+            long neZaman = g.son > simdi ? g.son : simdi + 60_000;
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, neZaman, pi);
+        }
+    }
+
     /** Şu anki saat, ayarlardaki aralıkta mı? (başlangıç ve bitiş dahil) */
     static boolean saatUygun(Context c) {
         int h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);

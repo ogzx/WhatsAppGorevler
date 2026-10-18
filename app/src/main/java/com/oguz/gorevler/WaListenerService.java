@@ -58,7 +58,13 @@ public class WaListenerService extends NotificationListenerService {
     private final Handler ana = new Handler(Looper.getMainLooper());
     private final LinkedList<Bekleyen> bekleyenler = new LinkedList<>();
     private final Set<String> islenenFotolar = new HashSet<>();
-    private final Runnable tara = this::medyaTara;
+    private final Runnable tara = this::taraHepsi;
+    private long sonSs; // ekran görüntüsü tarama su işareti (saniye)
+
+    private void taraHepsi() {
+        medyaTara();
+        ekranGoruntusuTara();
+    }
     private ContentObserver gozlemci;
     private long sonMedya; // saniye (MediaStore DATE_ADDED birimi)
 
@@ -86,6 +92,7 @@ public class WaListenerService extends NotificationListenerService {
     private void gozlemciKur() {
         if (gozlemci != null || Build.VERSION.SDK_INT < 29 || !Ocr.izinVar(this)) return;
         sonMedya = System.currentTimeMillis() / 1000 - 5;
+        sonSs = System.currentTimeMillis() / 1000 - 5;
         gozlemci = new ContentObserver(ana) {
             @Override
             public void onChange(boolean kendi) {
@@ -264,6 +271,47 @@ public class WaListenerService extends NotificationListenerService {
                 Ocr.oku(this, dosya, okunan -> fotoKaydet(f, okunan, fotoUri));
             }
         } catch (Exception ignored) { }
+    }
+
+    /** Ekran görüntüleri klasörüne düşen yeni görüntüleri okur (ayrı su işareti). */
+    private void ekranGoruntusuTara() {
+        if (Build.VERSION.SDK_INT < 29 || !Ayarlar.aktif(this) || !Ayarlar.ekranGoruntusu(this)
+                || !Ocr.izinVar(this)) return;
+
+        String[] alanlar = {
+                MediaStore.MediaColumns._ID,
+                MediaStore.MediaColumns.DATE_ADDED
+        };
+        String secim = MediaStore.MediaColumns.DATE_ADDED + " > ? AND ("
+                + MediaStore.MediaColumns.RELATIVE_PATH + " LIKE ? OR "
+                + MediaStore.MediaColumns.RELATIVE_PATH + " LIKE ?)";
+        String[] degerler = {String.valueOf(sonSs), "%Screenshots%", "%Ekran%"};
+
+        try (Cursor c = getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                alanlar, secim, degerler, MediaStore.MediaColumns.DATE_ADDED + " ASC")) {
+            if (c == null) return;
+            while (c.moveToNext()) {
+                long id = c.getLong(0);
+                long eklendi = c.getLong(1);
+                if (eklendi > sonSs) sonSs = eklendi;
+                Uri dosya = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+                final long zaman = eklendi * 1000;
+                final String fotoUri = dosya.toString();
+                Ocr.oku(this, dosya, okunan -> ekranGoruntusuKaydet(okunan, zaman, fotoUri));
+            }
+        } catch (Exception ignored) { }
+    }
+
+    /** Ekran görüntüsündeki yazı kelime/kişi kuralına uyuyorsa görev yapar. */
+    private void ekranGoruntusuKaydet(String okunan, long zaman, String fotoUri) {
+        if (okunan == null || okunan.trim().isEmpty()) return;
+        String t = okunan.trim();
+        if (t.length() > METIN_SINIRI) t = t.substring(0, METIN_SINIRI) + "…";
+        // Ekran görüntüsünün kimden geldiği bilinmez: yalnızca kelime kuralıyla değerlendir.
+        if (Ayarlar.eslesen(this, t) == null && !Ayarlar.hepsi(this)) return;
+        if (Gorevlendir.dene(this, "Ekran görüntüsü", null, t, zaman, "ss|" + fotoUri, fotoUri, false)) {
+            haberVer();
+        }
     }
 
     private void fotoKaydet(Bekleyen bk, String okunan, String fotoUri) {

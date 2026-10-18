@@ -6,8 +6,17 @@ WhatsApp'a gelen mesajlardan yapılacaklar listesi çıkaran, **tamamen telefonu
 - **Anahtar kelime:** fatura, beyanname, SGK, ödeme, KDV, gönder, acil... geçen mesajlar görev olur (liste düzenlenebilir).
 - **Önemli kişiler / gruplar:** Seçtiğin kişilerin her mesajı görev sayılır. İstersen *sadece* onlar takip edilir. Kişiler, mesaj gelenler listesinden işaretlenerek seçilir.
 - **Fotoğraf okuma:** WhatsApp'a gelen fotoğraflardaki yazılar (fatura, dekont, tahakkuk fişi...) telefonda okunur, anahtar kelime ya da önemli kişi kuralına uyanlar görev olur. Ayrıca herhangi bir fotoğraf *Paylaş > WA Görevler* ile ya da menüdeki *Fotoğraftan görev* ile eklenebilir.
+- **Ekran okuma:** WhatsApp açıkken ekrandaki mesajları da okur; sessize alınmış sohbetler ve ekran açıkken gelen, bildirim üretmeyen mesajları yakalar (erişilebilirlik izni ister).
+- **Sohbeti içe aktarma / mesaj paylaşma:** WhatsApp'ta sohbeti "Medya olmadan" dışa aktarıp tarar; tek mesajı Paylaş > WA Görevler ile ekler.
+- **Ekran görüntüsü okuma:** Ekran görüntüsü klasörüne düşen görüntülerdeki yazıları da okur.
+- **Son tarih yakalama:** "15'ine kadar", "ayın sonuna", "15 Kasım", "yarın" gibi ifadeleri okuyup göreve son tarih koyar ve o gün hatırlatır. Elle de son tarih verilebilir.
+- **Periyodik vergi görevleri:** KDV, muhtasar, SGK gibi her ay tekrar eden hatırlatmaları otomatik oluşturur (günleri düzenlenebilir; resmî takvimi kendin doğrula).
+- **Mükellef/firma etiketi:** Görevleri firmaya göre etiketle ve süz.
 - **Saat başı hatırlatma:** Belirlediğin saat aralığında (varsayılan 09:00–19:00), açık görev varsa her saat başı listeyi bildirim olarak gösterir. Bildirimdeki **WhatsApp'a gönder** düğmesi listeyi kendi WhatsApp sohbetine hazır getirir.
-- Dokun → tamamla, basılı tut → kopyala / düzenle / sil / fotoğrafı aç. Elle görev ekleme, paylaşma.
+- **Ana ekran widget'ı:** Bugünün görevlerini ana ekranda gösterir; satıra dokununca tamamlanır.
+- **Hızlı Ayarlar kutucuğu:** Bildirim panelinden panodaki metni tek dokunuşla görev yapar.
+- **Yedekleme/geri yükleme:** Görevleri ve ayarları bir dosyaya yedekle, geri yükle (internet yok, dosya sende kalır).
+- Dokun → tamamla, basılı tut → kopyala / düzenle / son tarih / firma / sil / fotoğrafı aç. Elle görev ekleme, paylaşma.
 
 ## Gizlilik
 - İnternet izni yok (fotoğraf kütüphanesinin eklediği ağ izinleri de zorla kaldırıldı).

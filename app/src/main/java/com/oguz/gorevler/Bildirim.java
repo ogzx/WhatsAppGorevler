@@ -16,6 +16,7 @@ public final class Bildirim {
 
     static final String KANAL_LISTE = "liste";
     static final String KANAL_YENI = "yeni";
+    static final String KANAL_SON = "sontarih";
     private static final int ID_LISTE = 1001;
 
     private Bildirim() {}
@@ -26,6 +27,23 @@ public final class Bildirim {
                 KANAL_LISTE, "Saatlik yapılacaklar listesi", NotificationManager.IMPORTANCE_DEFAULT));
         nm.createNotificationChannel(new NotificationChannel(
                 KANAL_YENI, "Yeni görev", NotificationManager.IMPORTANCE_HIGH));
+        nm.createNotificationChannel(new NotificationChannel(
+                KANAL_SON, "Son tarih hatırlatması", NotificationManager.IMPORTANCE_HIGH));
+    }
+
+    /** Bir görevin son tarihi geldiğinde gösterilen hatırlatma. */
+    static void sonTarih(Context c, Db.Gorev g) {
+        String baslik = "Son tarih" + (g.firma != null ? " · " + g.firma : "");
+        Notification n = new Notification.Builder(c, KANAL_SON)
+                .setSmallIcon(R.drawable.ic_bildirim)
+                .setContentTitle(baslik)
+                .setContentText(tekSatir(g.metin, 120))
+                .setStyle(new Notification.BigTextStyle().bigText(g.metin))
+                .setContentIntent(uygulamayiAc(c))
+                .setAutoCancel(true)
+                .build();
+        c.getSystemService(NotificationManager.class)
+                .notify((int) (2_000_000 + g.id), n);
     }
 
     /** Açık görevlerin düz metin listesi; görev yoksa null. */

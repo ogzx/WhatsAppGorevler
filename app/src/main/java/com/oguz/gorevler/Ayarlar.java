@@ -63,6 +63,14 @@ public final class Ayarlar {
 
     // --- Fotoğraf ---
     static boolean foto(Context c) { return p(c).getBoolean("foto", true); }
+    static boolean ekranGoruntusu(Context c) { return p(c).getBoolean("ekranGoruntusu", false); }
+
+    // --- Tarih yakalama ---
+    static boolean tarihYakala(Context c) { return p(c).getBoolean("tarihYakala", true); }
+
+    // --- Periyodik vergi görevleri ---
+    static boolean periyodik(Context c) { return p(c).getBoolean("periyodik", false); }
+    static String periyodikSecim(Context c) { return p(c).getString("periyodikSecim", ""); }
 
     // --- Bildirimler / saatlik hatırlatma ---
     static boolean yeniBildirim(Context c) { return p(c).getBoolean("yeniBildirim", false); }
